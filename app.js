@@ -39,7 +39,7 @@ app.get('/callback', (req, res) => {
     code: code
   }
 
-  if(oauth_provider==='gitlab'){
+  if (oauth_provider === 'gitlab') {
     options.client_id = process.env.OAUTH_CLIENT_ID
     options.client_secret = process.env.OAUTH_CLIENT_SECRET
     options.grant_type = 'authorization_code'
@@ -88,9 +88,7 @@ app.get('/success', (req, res) => {
 })
 
 app.get('/', (req, res) => {
-  res.send('Hello<br><a href="/auth" target="'+login_auth_target+'">Log in with '+oauth_provider.toUpperCase()+'</a>')
+  res.send('Hello<br><a href="/auth" target="' + login_auth_target + '">Log in with ' + oauth_provider.toUpperCase() + '</a>')
 })
 
-app.listen(port, () => {
-  console.log("gandalf is walkin' on port " + port)
-})
+module.exports = app
