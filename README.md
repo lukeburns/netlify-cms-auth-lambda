@@ -1,7 +1,7 @@
 # Netlify CMS Github Authentication
 This library exposes https://github.com/vencax/netlify-cms-github-oauth-provider as an AWS Lambda function.  Deployment is managed via the serverless.com utilities
 
-To deploy, you'll need the ![Serverless Framework](https://serverless.com/framework/docs/providers/aws/guide/installation/) installed. You'll also need your environment configured with ![AWS credentials](https://serverless.com/framework/docs/providers/aws/guide/credentials/).
+To deploy, you'll need the [Serverless Framework](https://serverless.com/framework/docs/providers/aws/guide/installation/) installed. You'll also need your environment configured with [AWS credentials](https://serverless.com/framework/docs/providers/aws/guide/credentials/).
 
 Create an SSL Certificate that will be used to secure communication with the service: <https://serverless-stack.com/chapters/setup-ssl.html> is a good guide.  You can ignore steps after "Update CloudFront Distributions with Certificate".  We will be using the serverless-domain-manager to automate these tasks.  
 
