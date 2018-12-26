@@ -1,19 +1,106 @@
 # Netlify CMS Github Authentication
-This library exposes https://github.com/vencax/netlify-cms-github-oauth-provider as an AWS Lambda function.  
+This library exposes https://github.com/vencax/netlify-cms-github-oauth-provider as an AWS Lambda function.  Deployment is managed via the serverless.com utilities
 
-Prior to attempting to dploy, it is recommended that you have the AWS CLI utilities installed to ensure your account is configured with AWS via API keys: <https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html>
-1. To deploy:
-    ```console
-    $ npm run config -- --account-id="<AWSACCOUNTID>" --bucket-name="<bucketForCFTemplates>" --region="us-east-1" --function-name="netlifyAuth"
-    ```
-    This modifies `package.json`, `simple-proxy-api.yaml` and `cloudformation.yaml` with your account ID, bucket, region and function name (region defaults to `us-east-1` and function name defaults to `AwsServerlessExpressFunction`). If the bucket you specify does not yet exist, the next step will create it for you. This step modifies the existing files in-place; if you wish to make changes to these settings, you will need to modify `package.json`, `simple-proxy-api.yaml` and `cloudformation.yaml` manually. (See <https://github.com/awslabs/aws-serverless-express/tree/master/examples/basic-starter> for more info.)  
-    **Note:** This doesn't seem to do a great job reconfiguring after configuring files when run the first time.  If you want to need to change function names, regions, etc after running, it is likely easiest to manually edit the files listed above.
-1. Run:
-    ```console
-    $ npm run setup #Mac, Linux, Bash
-    -or-
-    $ npm run win-setup #Windows
-    ```
-    This installs the node dependencies, creates an S3 bucket (if it does not already exist), packages and deploys your serverless Express application to AWS Lambda, and creates an API Gateway proxy API.
-1. After the setup command completes, open the AWS CloudFormation console <https://console.aws.amazon.com/cloudformation/home> and switch to the region you specified. Select the `netflifyAuth` stack, then click the ApiUrl value under the Outputs section - this will open a new page with your running API. The API index lists the resources available in the example Express server (app.js), along with example curl commands.
-1. If you would prefer to delete AWS assets that were just created, simply run `npm run delete-stack` to delete the CloudFormation Stack, including the API and Lambda Function. If you specified a new bucket in the config command for step 1 and want to delete that bucket, run `npm run delete-bucket`.
+To deploy, you'll need the ![Serverless Framework](https://serverless.com/framework/docs/providers/aws/guide/installation/) installed. You'll also need your environment configured with ![AWS credentials](https://serverless.com/framework/docs/providers/aws/guide/credentials/).
+
+Create an SSL Certificate that will be used to secure communication with the service: <https://serverless-stack.com/chapters/setup-ssl.html> is a good guide.  You can ignore steps after "Update CloudFront Distributions with Certificate".  We will be using the serverless-domain-manager to automate these tasks.  
+
+Finally, you will need to install the serverless-domain-manager  so you can use a custom domain for the service.
+```console
+npm install serverless-domain-manager --save-dev
+```
+More information on the domain manager can be found at <https://serverless.com/blog/serverless-api-gateway-domain/>.  This also contains info on SSL Certificate creation.
+
+After Installing the Serverless Framework and configuring AWS credentials as noted above, update the serverless.yml file:
+
+1. Set the appropriate environmental variables:
+    * `NODE_ENV`: production
+    * `OAUTH_CLIENT_ID`: OAUTH_CLIENT_ID_FROM_GITHUB-https://github.com/settings/developers
+    * `OAUTH_CLIENT_SECRET`: OAUTH_CLIENT_SECRET_FROM_GITHUB-https://github.com/settings/developers
+    * `REDIRECT_URL`: ServiceEndpoint_CNAME  
+    `AUTH_TARGET` and `NODE_ENV` should remain as is.
+    For example
+        ```yaml
+        functions:
+        app:
+            handler: index.handler
+            environment:
+            NODE_ENV: production
+            OAUTH_CLIENT_ID: afa7261a6969345088ea
+            OAUTH_CLIENT_SECRET: 32b0914de969695zcf0a553d33484ff22f65be4c
+            REDIRECT_URL: https://auth.companyname.com/callback
+            AUTH_TARGET: _blank
+            events:
+                - http: ANY /
+                - http: 'ANY {proxy+}'
+        ```
+1. Update the configuration for the serverless domain manager. Specifically:  
+    *  `domainName`: set to the domain name you will be using.  Make sure this matches the SSL certificate that you created above.
+    *  `createRoute53Record` If you are using Route 53 for DNS, set this to true.  If you are using another registrar, leave as false and plan on creating/updating a cname pointer to refer to the API distribution that `sls create_domain` creates. The distribution name can be determined by selecting `Custom Domain Names` in the left menu in the Amazon API Gateway Admin Console. An example of the file follows:
+        ```yaml   
+        plugins:
+        - serverless-domain-manager
+        custom:
+        customDomain:
+            domainName: auth.companyname.com
+            basePath: 'prod'
+            stage: ${self:provider.stage}
+            createRoute53Record: false
+            # Route53 is false for now.
+
+        ```
+    Note: Although AWS does charge to host DNS on Route 53, Route 53 is definitely the easier way to go here...
+1. Run `sls create_domain` to create the custom domain:
+   ```command
+   $ sls create_domain
+   Serverless: Skipping creation of Route53 record.
+   Serverless: 'auth.companyname.com' was created/updated. New domains may take up to 40 minutes to be initialized.
+   ```
+   The creating of the new domain will likely take about 10-15 minutes to be configured (or up to 40 minutes).  You can monitor this by looking for the distribution name can be determined by selecting `Custom Domain Names` in the left menu in the Amazon API Gateway Admin Console.
+1. Run `sls deploy` to deploy:
+   ```command
+    $ sls deploy
+    Serverless: WARNING: Missing "tenant" and "app" properties in serverless.yml. Without these properties, you can not publish the service to the Serverless Platform.
+    Serverless: Packaging service...
+    Serverless: Excluding development dependencies...
+    Serverless: Uploading CloudFormation file to S3...
+    Serverless: Uploading artifacts...
+    Serverless: Uploading service .zip file to S3 (2.66 MB)...
+    Serverless: Validating template...
+    Serverless: Updating Stack...
+    Serverless: Checking Stack update progress...
+    ..............
+    Serverless: Stack update finished...
+    Service Information
+    service: netlify-cms-auth
+    stage: prod
+    region: us-east-1
+    stack: netlify-cms-auth-prod
+    api keys:
+    None
+    endpoints:
+    ANY - https://<ID>.execute-api.us-east-1.amazonaws.com/prod
+    ANY - https://<ID></ID>.execute-api.us-east-1.amazonaws.com/prod/{proxy+}
+    functions:
+    app: netlify-cms-auth-prod-app
+    layers:
+    None
+    Serverless Domain Manager Summary
+    Distribution Domain Name
+    <DISTRIB>.cloudfront.net
+   ```
+1. Test by pointing a browser at `auth.companyname.com`
+1. Integrate in with your netlify CMS
+
+## Removal
+You can remove the stack by running: `sls remove`
+## Things not to do:
+* Do not upgrade the version of simple-oauth2 by installing the latest while setting up from scratch; it won't work.
+
+
+
+
+
+
+
+
