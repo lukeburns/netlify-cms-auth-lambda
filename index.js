@@ -1,8 +1,8 @@
 require('dotenv').config({silent: true})
 const express = require('express')
+
 const simpleOauthModule = require('simple-oauth2')
 const randomstring = require('randomstring')
-const port = process.env.PORT || 3000
 const oauth_provider = process.env.OAUTH_PROVIDER || 'github'
 const login_auth_target = process.env.AUTH_TARGET || '_self'
 
@@ -29,11 +29,13 @@ const authorizationUri = oauth2.authorizationCode.authorizeURL({
 
 // Initial page redirecting to Github
 app.get('/auth', (req, res) => {
+  console.log('called /auth - URL: ', authorizationUri)
   res.redirect(authorizationUri)
 })
 
 // Callback service parsing the authorization token and asking for the access token
 app.get('/callback', (req, res) => {
+  console.log('called /callback', req.query.code)
   const code = req.query.code
   var options = {
     code: code
@@ -46,7 +48,9 @@ app.get('/callback', (req, res) => {
     options.redirect_uri = process.env.REDIRECT_URL
   }
 
+  console.log('pre oauth2.authCode.getToken')
   oauth2.authorizationCode.getToken(options, (error, result) => {
+    console.log('oauth2.authCode.getToken')
     let mess, content
 
     if (error) {
@@ -62,33 +66,40 @@ app.get('/callback', (req, res) => {
       }
     }
 
+    console.log('Oauth Message: ', mess, ' Content: ', content)
     const script = `
-    <script>
-    (function() {
-      function recieveMessage(e) {
-        console.log("recieveMessage %o", e)
-        // send message to main window with da app
-        window.opener.postMessage(
-          'authorization:${oauth_provider}:${mess}:${JSON.stringify(content)}',
-          e.origin
-        )
-      }
-      window.addEventListener("message", recieveMessage, false)
-      // Start handshare with parent
-      console.log("Sending message: %o", "${oauth_provider}")
-      window.opener.postMessage("authorizing:${oauth_provider}", "*")
-      })()
-    </script>`
+      <script>
+        (function() {
+          window.addEventListener("message", authorize, false)
+
+          // Start handshare with parent
+          console.log("Sending message: %o", "${oauth_provider}")
+          window.opener.postMessage("authorizing:${oauth_provider}", "*")
+
+          function authorize(e) {
+            console.log("authorize %o", e)
+            // send message to main window with da app
+            window.opener.postMessage(
+              'authorization:${oauth_provider}:${mess}:${JSON.stringify(content)}',
+              e.origin
+            )
+          }
+        })()
+      </script>`
+
     return res.send(script)
   })
 })
 
 app.get('/success', (req, res) => {
+  console.log('called /success')
   res.send('')
 })
 
 app.get('/', (req, res) => {
-  res.send('Hello<br><a href="/auth" target="' + login_auth_target + '">Log in with ' + oauth_provider.toUpperCase() + '</a>')
+  res.send(`<script>
+    console.log('hello there')
+  </script>`)
 })
 
 module.exports = app
