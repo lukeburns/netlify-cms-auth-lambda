@@ -1,103 +1,105 @@
 require('dotenv').config({silent: true})
-const serverless = require('serverless-http');  //Using Serverless.com to deploy
-const express = require('express');
+const express = require('express')
 
-const simpleOauthModule = require('simple-oauth2');
-const randomstring = require('randomstring');
-//const port = process.env.PORT || 3000                               //is port needed?
-const oauth_provider = process.env.OAUTH_PROVIDER || 'github';
-const login_auth_target = process.env.AUTH_TARGET || '_self';
+const simpleOauthModule = require('simple-oauth2')
+const randomstring = require('randomstring')
+const oauth_provider = process.env.OAUTH_PROVIDER || 'github'
+const login_auth_target = process.env.AUTH_TARGET || '_self'
 
-const app=express();
+const app = express()
 const oauth2 = simpleOauthModule.create({
-    client: {
-      id: process.env.OAUTH_CLIENT_ID,
-      secret: process.env.OAUTH_CLIENT_SECRET
-    },
-    auth: {
-      // Supply GIT_HOSTNAME for enterprise github installs.
-      tokenHost: process.env.GIT_HOSTNAME || 'https://github.com',
-      tokenPath: process.env.OAUTH_TOKEN_PATH || '/login/oauth/access_token',
-      authorizePath: process.env.OAUTH_AUTHORIZE_PATH || '/login/oauth/authorize'
-    }
-  })
+  client: {
+    id: process.env.OAUTH_CLIENT_ID,
+    secret: process.env.OAUTH_CLIENT_SECRET
+  },
+  auth: {
+    // Supply GIT_HOSTNAME for enterprise github installs.
+    tokenHost: process.env.GIT_HOSTNAME || 'https://github.com',
+    tokenPath: process.env.OAUTH_TOKEN_PATH || '/login/oauth/access_token',
+    authorizePath: process.env.OAUTH_AUTHORIZE_PATH || '/login/oauth/authorize'
+  }
+})
 
 // Authorization uri definition
 const authorizationUri = oauth2.authorizationCode.authorizeURL({
-    redirect_uri: process.env.REDIRECT_URL,
-    scope: process.env.SCOPES || 'repo,user',
-    state: randomstring.generate(32)
-  })
+  redirect_uri: process.env.REDIRECT_URL,
+  scope: process.env.SCOPES || 'repo,user',
+  state: randomstring.generate(32)
+})
 
 // Initial page redirecting to Github
 app.get('/auth', (req, res) => {
-    console.log('called /auth - URL: ', authorizationUri)
-    res.redirect(authorizationUri)
-})  
+  console.log('called /auth - URL: ', authorizationUri)
+  res.redirect(authorizationUri)
+})
 
-//Callback service parsing the authorization token and asking for the access token - didn't work
+// Callback service parsing the authorization token and asking for the access token
 app.get('/callback', (req, res) => {
   console.log('called /callback', req.query.code)
-    const code = req.query.code
-    var options = {
-      code: code
-    }
-    if (oauth_provider === 'gitlab') {
-      options.client_id = process.env.OAUTH_CLIENT_ID
-      options.client_secret = process.env.OAUTH_CLIENT_SECRET
-      options.grant_type = 'authorization_code'
-      options.redirect_uri = process.env.REDIRECT_URL
-    }
-    console.log('pre oauth2.authCode.getToken')
+  const code = req.query.code
+  var options = {
+    code: code
+  }
 
-    oauth2.authorizationCode.getToken(options, (error, result) => {
-      console.log('oauth2.authCode.getToken')
-      let mess, content
-  
-      if (error) {
-        console.error('Access Token Error', error.message)
-        mess = 'error'
-        content = JSON.stringify(error)
-      } else {
-        const token = oauth2.accessToken.create(result)
-        mess = 'success'
-        content = {
-          token: token.token.access_token,
-          provider: oauth_provider
-        }
+  if (oauth_provider === 'gitlab') {
+    options.client_id = process.env.OAUTH_CLIENT_ID
+    options.client_secret = process.env.OAUTH_CLIENT_SECRET
+    options.grant_type = 'authorization_code'
+    options.redirect_uri = process.env.REDIRECT_URL
+  }
+
+  console.log('pre oauth2.authCode.getToken')
+  oauth2.authorizationCode.getToken(options, (error, result) => {
+    console.log('oauth2.authCode.getToken')
+    let mess, content
+
+    if (error) {
+      console.error('Access Token Error', error.message)
+      mess = 'error'
+      content = JSON.stringify(error)
+    } else {
+      const token = oauth2.accessToken.create(result)
+      mess = 'success'
+      content = {
+        token: token.token.access_token,
+        provider: oauth_provider
       }
-      console.log('Oauth Message: ', mess, ' Content: ', content);
-    
-  
-      const script = `
+    }
+
+    console.log('Oauth Message: ', mess, ' Content: ', content)
+    const script = `
       <script>
-      (function() {
-        function recieveMessage(e) {
-          console.log("recieveMessage %o", e)
-          // send message to main window with da app
-          window.opener.postMessage(
-            'authorization:${oauth_provider}:${mess}:${JSON.stringify(content)}',
-            e.origin
-          )
-        }
-        window.addEventListener("message", recieveMessage, false)
-        // Start handshare with parent
-        console.log("Sending message: %o", "${oauth_provider}")
-        window.opener.postMessage("authorizing:${oauth_provider}", "*")
+        (function() {
+          window.addEventListener("message", authorize, false)
+
+          // Start handshare with parent
+          console.log("Sending message: %o", "${oauth_provider}")
+          window.opener.postMessage("authorizing:${oauth_provider}", "*")
+
+          function authorize(e) {
+            console.log("authorize %o", e)
+            // send message to main window with da app
+            window.opener.postMessage(
+              'authorization:${oauth_provider}:${mess}:${JSON.stringify(content)}',
+              e.origin
+            )
+          }
         })()
       </script>`
-      return res.send(script)
-    })
+
+    return res.send(script)
   })
-  
-  app.get('/success', (req, res) => {
-    res.send('')
-  })
-  
-  app.get('/', (req, res) => {
-    res.send('Hello<br><a href="auth" target="' + login_auth_target + '">Log in with ' + oauth_provider.toUpperCase() + '</a>')    // got rid of slashie using /prod
-    console.log('called /')                                                                                                                                    
-  })
-  
-module.exports.handler = serverless(app);   //was: module.exports = app  
-  
+})
+
+app.get('/success', (req, res) => {
+  console.log('called /success')
+  res.send('')
+})
+
+app.get('/', (req, res) => {
+  res.send(`<script>
+    console.log('hello there')
+  </script>`)
+})
+
+module.exports = app
