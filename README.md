@@ -27,14 +27,16 @@ This repository includes this for convenience in `handler.js`, which you can use
   ```
   git clone https://github.com/lukeburns/netlify-cms-github-lambda
   ```
-1. Install dependencies
+  
+2. Install dependencies
   ```
   npm i
   ```
-1. Configure your [local Serverless and AWS environment](https://serverless.com/framework/docs/providers/aws/guide/installation/)
+  
+3. Configure your [local Serverless and AWS environment](https://serverless.com/framework/docs/providers/aws/guide/installation/)
 
-1. Configure your production environment
-
+4. Configure your production environment
+  
   The following Serverless configuration will prepare an authentication server for Github on AWS Lambda and API Gateway. You can also configure for use with another provider, like Gitlab. To do this, see configuration details in the original library: [vencax/netlify-cms-github-oauth-provider](https://github.com/vencax/netlify-cms-github-oauth-provider#2-config).
 
   ```yaml
@@ -61,7 +63,7 @@ This repository includes this for convenience in `handler.js`, which you can use
 
   This is also where you can prepare additional Serverless configuration, such as a [custom domain](https://serverless.com/blog/serverless-api-gateway-domain/).
 
-1. Deploy with the Serverless CLI
+5. Deploy with the Serverless CLI
 
   ```
   sls deploy
@@ -69,7 +71,7 @@ This repository includes this for convenience in `handler.js`, which you can use
 
   Your authentication server should now be running, e.g. at https://id.execute-api.us-east-1.amazonaws.com/prod.
 
-1. Configure Netlify CMS
+6. Configure Netlify CMS
 
   For instance, the following backend configuration is what you'll need to if you deploy to AWS without a custom domain.
 
