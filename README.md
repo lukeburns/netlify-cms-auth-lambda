@@ -1,4 +1,4 @@
-# Netlify CMS Github Authentication
+# Netlify CMS Authentication as a Lambda Service
 
 This library exposes https://github.com/vencax/netlify-cms-github-oauth-provider as a lambda service.
 
@@ -7,10 +7,10 @@ This library exposes https://github.com/vencax/netlify-cms-github-oauth-provider
 #### As a library
 
 ```
-npm i netlify-cms-github-lambda
+npm i netlify-cms-auth-lambda
 ```
 
-AWS Lambda example using [serverless-http](netlify-cms-github-lambda):
+AWS Lambda example using [serverless-http](https://github.com/dougmoscrop/serverless-http):
 
 ```js
 // handler.js
@@ -25,18 +25,18 @@ This repository includes this for convenience in `handler.js`, which you can use
 
 1. Clone this repository
   ```
-  git clone https://github.com/lukeburns/netlify-cms-github-lambda
+  git clone https://github.com/lukeburns/netlify-cms-auth-lambda
   ```
-  
+
 2. Install dependencies
   ```
   npm i
   ```
-  
+
 3. Configure your [local Serverless and AWS environment](https://serverless.com/framework/docs/providers/aws/guide/installation/)
 
 4. Configure your production environment
-  
+
   The following Serverless configuration will prepare an authentication server for Github on AWS Lambda and API Gateway. You can also configure for use with another provider, like Gitlab. To do this, see configuration details in the original library: [vencax/netlify-cms-github-oauth-provider](https://github.com/vencax/netlify-cms-github-oauth-provider#2-config). `serverless.yml` should be added to your local repository.
 
   ```yaml

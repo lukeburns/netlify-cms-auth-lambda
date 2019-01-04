@@ -1,11 +1,17 @@
 {
-  "name": "netlify-cms-github-lambda",
+  "name": "netlify-cms-auth-lambda",
   "version": "0.1.0",
-  "description": "AWS lambda function for Netlify CMS Github authentication",
+  "engines": {
+    "node": ">=7.x"
+  },
+  "description": "Lambda service for Netlify CMS authentication",
   "repository": "https://github.com/lukeburns/netlify-cms-github-lambda",
   "license": "MIT",
   "main": "index.js",
-  "author": "Luke Burns",
+  "author": "Luke Burns <lukemburns@gmail.com>",
+  "contributors": [
+    "George Anderson <george.anderson@gmail.com>"
+  ],
   "dependencies": {
     "dotenv": "^6.2.0",
     "express": "^4.16.4",
