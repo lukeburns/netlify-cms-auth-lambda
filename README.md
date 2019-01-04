@@ -37,7 +37,7 @@ This repository includes this for convenience in `handler.js`, which you can use
 
 4. Configure your production environment
   
-  The following Serverless configuration will prepare an authentication server for Github on AWS Lambda and API Gateway. You can also configure for use with another provider, like Gitlab. To do this, see configuration details in the original library: [vencax/netlify-cms-github-oauth-provider](https://github.com/vencax/netlify-cms-github-oauth-provider#2-config).
+  The following Serverless configuration will prepare an authentication server for Github on AWS Lambda and API Gateway. You can also configure for use with another provider, like Gitlab. To do this, see configuration details in the original library: [vencax/netlify-cms-github-oauth-provider](https://github.com/vencax/netlify-cms-github-oauth-provider#2-config). `serverless.yml` should be added to your local repository.
 
   ```yaml
   # serverless.yml
